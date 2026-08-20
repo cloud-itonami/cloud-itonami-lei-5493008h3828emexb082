@@ -79,13 +79,15 @@
 ;;     3 stood -- the Dutch and English legal-form rows and NACE-BEL 70.100,
 ;;     because Colruyt is also a naamloze vennootschap with head-office
 ;;     activity.
-;;   * Companies House, repointed at 11642143. 4 of 5 rows DRIFTED; the
-;;     incorporation date stood, because 11642143 is HARROP LEGAL LTD, a
-;;     company incorporated the SAME DAY -- adjacent company numbers are issued
-;;     together, which makes an incorporation date the weakest discriminator
-;;     this register offers. That row is kept and labelled, not deleted, and
-;;     two reverse-lookup rows were added beside it so the block no longer
-;;     leans on it.
+;;   * Companies House, repointed at 11642143. Six rows are affected -- the five
+;;     on the /company/ url plus the reverse-lookup row whose substring names
+;;     that path -- and 5 of the 6 DRIFTED. The incorporation date stood,
+;;     because 11642143 is HARROP LEGAL LTD, a company incorporated the SAME
+;;     DAY: adjacent company numbers are issued together, which makes an
+;;     incorporation date the weakest discriminator this register offers. That
+;;     row is kept and labelled, not deleted, and the two reverse-lookup rows
+;;     were added beside it so the block no longer leans on it. (The first
+;;     measurement of this block, before those two rows existed, read 4 of 5.)
 ;;   * ABR, checked against MONAKA PTY LTD (ACN 000 000 019). Only the entity
 ;;     type stood; the name, the ACN, the ABN and the 1999 activation date all
 ;;     failed.
