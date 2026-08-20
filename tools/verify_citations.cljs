@@ -16,8 +16,9 @@
 ;; Exit codes:
 ;;   0 — answered, every citation checked, floor met
 ;;   1 — answered, at least one citation wrong
-;;   2 — could not answer (parse failure, network, zero checks, floor miss,
-;;       or a register that served a challenge instead of a record)
+;;   2 — could not answer: parse failure, zero checks, floor miss, a url that
+;;       could not be fetched at all (UNREACHABLE), or a register that served a
+;;       challenge instead of a record (BLOCKED)
 ;;
 ;; "Nothing was checked" and "nothing was wrong" must not share an exit code.
 ;; Neither may "the register refused to answer me" and "the register no longer
@@ -126,12 +127,12 @@
   (js/setTimeout (fn [] (js/process.exit code)) 50))
 
 (defn check-entry
-  "Pure: judge one row against the already-fetched result for its url."
+  "Pure: judge one row against the already-fetched result for its url. Only ever
+   called for urls that were actually reached and not challenged."
   [e fetched]
-  (let [{:keys [status body error]} fetched
+  (let [{:keys [status body]} fetched
         expect (or (:cite/expect-substring e) "")]
     (cond
-      error {:ok? false :id (:cite/id e) :why (str "fetch-error " error)}
       (not (<= 200 status 299)) {:ok? false :id (:cite/id e) :why (str "HTTP " status)}
       (and (not (str/blank? expect)) (not (str/includes? (or body "") expect)))
       {:ok? false :id (:cite/id e) :why (str "missing substring " (pr-str expect))}
@@ -153,7 +154,8 @@
 
 (defn judge!
   "All rows judged against the already-fetched bodies. Never called if any url
-   was challenged."
+   was challenged or could not be fetched — those are refused upstream, so a
+   FAIL here always means the body was read and did not carry the claim."
   [entries fetched]
   (let [results (mapv (fn [e] (check-entry e (get fetched (:cite/url e)))) entries)
         n (count results)
@@ -185,13 +187,20 @@
             (.then
              (fn [fetched]
                (say "FETCHED" (count urls) "distinct url(s) for" (count entries) "row(s)")
-               ;; A challenge is not an answer. Report and refuse before judging rows.
-               (let [blocked (filterv (fn [u] (challenged? (get fetched u))) urls)]
-                 (if (seq blocked)
+               ;; Neither a challenge nor a failed fetch is an answer. Both are
+               ;; reported and refused BEFORE any row is judged, because calling
+               ;; either one a DRIFT would say "this register no longer carries
+               ;; this claim" when the truth is "I never read it".
+               (let [blocked (filterv (fn [u] (challenged? (get fetched u))) urls)
+                     unreachable (filterv (fn [u] (:error (get fetched u))) urls)]
+                 (if (or (seq blocked) (seq unreachable))
                    (do (doseq [u blocked]
                          (println "BLOCKED" u "served a challenge page, not a record"))
-                       (println "UNANSWERED" (count blocked) "of" (count urls)
-                                "url(s) challenged the gate; refusing to report a pass or a drift")
+                       (doseq [u unreachable]
+                         (println "UNREACHABLE" u (:error (get fetched u))))
+                       (println "UNANSWERED" (+ (count blocked) (count unreachable))
+                                "of" (count urls)
+                                "url(s) could not be read; refusing to report a pass or a drift")
                        (finish! 2))
                    (judge! entries fetched)))))
             (.catch

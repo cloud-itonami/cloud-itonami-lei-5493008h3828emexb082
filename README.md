@@ -41,8 +41,12 @@ Exit codes are three, and they do not overlap:
 - **0** — answered, every citation checked, floor met
 - **1** — answered, at least one citation is wrong (each is printed as `DRIFT`)
 - **2** — could not answer: catalog missing, unparseable, empty, fewer rows than
-  `--min`, or a register that served a challenge instead of a record
-  (printed as `BLOCKED`)
+  `--min`, a URL that could not be fetched at all (printed as `UNREACHABLE`,
+  with the underlying error), or a register that served a challenge instead of
+  a record (printed as `BLOCKED`)
+
+Both refusals are decided **before** any row is judged, so a `DRIFT` always
+means the body was read and did not carry the claim.
 
 "Nothing was checked" and "nothing was wrong" must not share an exit code, which
 is why 2 exists. Neither may "the register refused to answer me" and "the
