@@ -400,7 +400,7 @@
    :cite/claim "GLEIF maps ISIN BE0974293251 to this LEI."
    :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/isins?page%5Bsize%5D=30"
    :cite/expect-substring "\"isin\":\"BE0974293251\""}
-  {:cite/id "gleif-isin-us-adr"
+  {:cite/id "gleif-isin-us-listed"
    :cite/authority :gleif
    :cite/claim "GLEIF maps the US-domiciled instrument US03524A1088 to the same LEI."
    :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/isins?page%5Bsize%5D=30"
@@ -409,7 +409,7 @@
   ;; ---- GLEIF, corporate structure -----------------------------------------
   {:cite/id "gleif-children-total-six"
    :cite/authority :gleif
-   :cite/claim "GLEIF publishes six direct children for this LEI."
+   :cite/claim "GLEIF publishes six direct children for this LEI. POINT-IN-TIME COUNT, true on 2026-08-20: if this row ever DRIFTs, the first thing to check is whether the group's structure changed, not whether the catalog is broken."
    :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
    :cite/expect-substring "\"total\":6"}
   {:cite/id "gleif-child-uk-name"
