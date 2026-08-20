@@ -80,11 +80,32 @@ returns `"total":0`. The status code discriminates nothing here. The substring
 does all the work, and that is the property the gate exists to hold.
 
 Sixteen of the ninety rows are labelled `ATTRIBUTE ROW` in their own
-`:cite/claim`, because a mutation run against real peer entities — SOLVAY for
-GLEIF, COLRUYT GROUP for KBO, HARROP LEGAL LTD for Companies House, MONAKA PTY
-LTD for the ABR — left them standing. They say what is true of whatever entity
-the URL names; the identity rows beside them are what pin which entity that is.
-The catalog header records the measurement in full.
+`:cite/claim`, because pointing them at a real peer entity leaves them standing.
+Three of the four blocks were measured by repointing the catalog and re-running
+the gate — SOLVAY for GLEIF, COLRUYT GROUP for KBO, HARROP LEGAL LTD for
+Companies House. The ABR block was measured by fetching MONAKA PTY LTD
+(ACN 000 000 019) and comparing its page against the five substrings directly,
+not by a gate run. Attribute rows say what is true of whatever entity the URL
+names; the identity rows beside them are what pin which entity that is. The
+catalog header records the measurement in full.
 
-The gate is **not** a check on the archived privacy policy above. That archive is
-verified separately by reproducing the recorded SHA-256 from the recorded text.
+## The archived document is checked separately
+
+The citation gate says nothing about the privacy policy above. That capture has
+its own check, and it asks one question only — does the recorded text still hash
+to the recorded digest:
+
+```bash
+nbb tools/verify_archive.cljs
+```
+
+Exit 0 the digest reproduces, 1 it does not, 2 the check could not be made
+(journal missing, unparseable, or a required field absent).
+
+It is **not** a network check and must not be read as one. It does not say the
+source still serves that document, and it does not say the document is what
+`:tos/doc-type` claims: a sibling repository in this fleet holds a capture whose
+digest reproduces perfectly and which is a 404 page. As of 2026-08-20 this
+repository's capture reproduces, carries no 404 marker, and its source URL still
+answers HTTP 200 with a privacy policy — but only the first of those three is
+what the tool checks.
