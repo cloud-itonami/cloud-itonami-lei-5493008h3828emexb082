@@ -1,0 +1,670 @@
+;; Verified public-register citations for the legal entity archived by this repository.
+;;
+;; Every row is checked live by tools/verify_citations.cljs:
+;;   * GET :cite/url must answer HTTP 2xx
+;;   * :cite/expect-substring must appear in the response body
+;;
+;; A URL that cannot be fetched, or whose body no longer carries the claim, is a
+;; DRIFT and fails the gate. Nothing is recorded here that was not retrieved.
+;;
+;; Four independent authorities are cited, not one: GLEIF (the global LEI
+;; system), Belgium's Kruispuntbank van Ondernemingen / Banque-Carrefour des
+;; Entreprises (KBO/BCE, the national commercial register the Federal Public
+;; Service Economy administers), the United Kingdom's Companies House, and
+;; Australia's Business Register. The last three are not picked because they
+;; happened to agree -- they are the registration authorities GLEIF itself
+;; names, on this entity and on its children, reached by following GLEIF's own
+;; RA pointers.
+;;
+;; THE SUBJECT'S OWN REGISTER ANSWERS HERE. GLEIF records this LEI as
+;; registered at RA000025 as 0417.497.106. RA000025 resolves, at GLEIF, to the
+;; Crossroad Bank of Enterprises. Asked for that enterprise number, KBO Public
+;; Search returns ANHEUSER-BUSCH INBEV -- so unlike a catalog that can only cite
+;; the LEI system's copy of a national identifier, the identifier here is read
+;; back from the national register that issued it.
+;;
+;; Three joins are load-bearing and are checkable only against those
+;; authorities' own bodies:
+;;
+;;   * Enterprise number 0417.497.106. KBO returns the name, the registered
+;;     seat, the legal form, and a start date of 2 August 1977. GLEIF publishes
+;;     creationDate 1977-08-02 for the same LEI. The two systems agree on a date
+;;     neither of them is the source of.
+;;
+;;   * Company number 11642142. GLEIF lists AB INBEV INVESTMENTS HOLDINGS
+;;     COMPANY 2 LIMITED among this LEI's direct children and records it as
+;;     validated at RA000585, which GLEIF resolves to Companies House. Asked for
+;;     11642142, Companies House returns that company, incorporated 25 October
+;;     2018, SIC 64209 (activities of other holding companies). Companies House
+;;     has no LEI field and no view of GLEIF.
+;;
+;;   * ACN 071 508 702. GLEIF lists FBG FINANCE PTY LTD (AU) as a direct child,
+;;     validated at RA000014, which GLEIF resolves to ASIC. Asked for that
+;;     number, the Australian Business Register returns FBG FINANCE PTY LTD,
+;;     ABN 32 071 508 702, an Australian Private Company active since 1 November
+;;     1999. Note the register cited is the ABR (Australian Taxation Office),
+;;     NOT ASIC itself: the ABR republishes the ASIC company number alongside
+;;     the ABN, and it is the ABR that answers an unauthenticated GET. This
+;;     corroborates the number at a second Commonwealth register, and it is not
+;;     a claim to have re-read ASIC's own file.
+;;
+;; WHY STATUS ALONE CANNOT CARRY THESE ROWS. Measured 2026-08-20, each authority
+;; answers 2xx for a WRONG identifier:
+;;   * KBO with nummer=0417497107 -> HTTP 200, a 9,154-byte error page
+;;   * KBO with nummer=0400378485 -> HTTP 200, a different real company
+;;     (COLRUYT GROUP)
+;;   * Companies House with company/11642143 -> HTTP 200, a different real
+;;     company (HARROP LEGAL LTD)
+;;   * ABR with id=071508703 -> HTTP 200, a page reading "Invalid"
+;;   * GLEIF filtered by registeredAs=0417.497.107 -> HTTP 200, "total":0
+;; So for every one of these rows it is the substring, not the HTTP status,
+;; that is doing the work. That is the property the gate exists to hold.
+;;
+;; IDENTITY ROWS vs ATTRIBUTE ROWS. Not every row discriminates on its own, and
+;; pretending otherwise would be the same dishonesty as trusting the status
+;; code. This was measured by mutation on 2026-08-20, by repointing each block
+;; at a REAL peer -- not at a nonexistent identifier, which is the easy case --
+;; and counting what stayed green:
+;;
+;;   * GLEIF, all 40 subject-structure URLs repointed at SOLVAY
+;;     (549300MMVL80RTBP3O28), chosen because it is the most adversarial peer
+;;     available: Belgian, RA000025, ACTIVE, ISSUED, R85P, FULLY_CORROBORATED,
+;;     region BE-BRU -- every attribute this catalog records. 29 rows DRIFTED,
+;;     11 stood: conformityFlag, corroborationLevel, entity status ACTIVE,
+;;     registration status ISSUED, jurisdiction BE, region BE-BRU, legalForm
+;;     R85P, registeredAt RA000025, the relationship type
+;;     IS_DIRECTLY_CONSOLIDATED_BY, and the two parent-exception categories.
+;;     All eleven are true of SOLVAY as well.
+;;   * KBO, repointed at COLRUYT GROUP (0400378485). 15 of 18 rows DRIFTED;
+;;     3 stood -- the Dutch and English legal-form rows and NACE-BEL 70.100,
+;;     because Colruyt is also a naamloze vennootschap with head-office
+;;     activity.
+;;   * Companies House, repointed at 11642143. 4 of 5 rows DRIFTED; the
+;;     incorporation date stood, because 11642143 is HARROP LEGAL LTD, a
+;;     company incorporated the SAME DAY -- adjacent company numbers are issued
+;;     together, which makes an incorporation date the weakest discriminator
+;;     this register offers. That row is kept and labelled, not deleted, and
+;;     two reverse-lookup rows were added beside it so the block no longer
+;;     leans on it.
+;;   * ABR, checked against MONAKA PTY LTD (ACN 000 000 019). Only the entity
+;;     type stood; the name, the ACN, the ABN and the 1999 activation date all
+;;     failed.
+;;
+;; So 16 of the rows below are ATTRIBUTE rows: they say what is true of
+;; whatever entity the URL names, and they mean something only because the
+;; IDENTITY rows in the same block pin which entity that is. Each one says so
+;; in its own :cite/claim. The gate still fails as a whole in every case above,
+;; which is the property that matters; this note exists so no reader mistakes
+;; an attribute row for an identification.
+;;
+;; ENCODING. Substrings are chosen from the RAW response body, and the hosts do
+;; not agree on how to encode anything. api.gleif.org escapes every solidus as
+;; \/ and all non-ASCII as \uXXXX, so no GLEIF row here matches a URL or an
+;; accented local name -- the RA row matches the pure-ASCII
+;; "Kruispuntbank van Ondernemingen" rather than "Banque-Carrefour des
+;; Entreprises", whose French text GLEIF delivers unescaped but whose sibling
+;; fields do not. kbopub and abr.business.gov.au emit &nbsp; INSIDE the values,
+;; so the seat is "Grote Markt&nbsp;1" and the ABN date is
+;; "01&nbsp;Nov&nbsp;1999"; matching "Grote Markt 1" with a plain space finds
+;; nothing. No substring in this file contains a backslash. A normalised form
+;; would hide which body was read.
+;;
+;; TWO LANGUAGES OF ONE REGISTER. KBO Public Search is cited twice, in Dutch and
+;; in English, because the two renderings disagree in a way that matters. The
+;; Dutch page gives the seat as "Grote Markt 1, 1000 Brussel"; the English page
+;; gives the same seat as "Grand-Place 1, 1000 Bruxelles". GLEIF publishes
+;; "Grand-Place 1" / "Bruxelles" -- the French form -- for a record whose
+;; legalName language it declares as "nl". The English rows are therefore not a
+;; duplicate of the Dutch rows: they are the ones that establish that GLEIF's
+;; address string is a rendering KBO itself serves, and not a translation
+;; introduced somewhere between the two.
+;;
+;; A NOTE ON THE 2016 RESTRUCTURING. KBO reports that this enterprise number
+;; replaces 0649.641.563, closed since 10/10/2016, and that the entity was
+;; absorbed by 0649.641.563 (Newbelco SA/NV) on 10 October 2016 -- the vehicle
+;; through which the SABMiller combination was carried out. Both statements are
+;; on the register page and both are cited below. They are recorded because a
+;; reader checking 0417.497.106 against older sources will meet the other
+;; number, not because this catalog is asserting a reading of the transaction.
+;;
+;; Deliberately NOT cited, and why (all measured 2026-08-20):
+;;
+;;   * VIES, the European Commission's VAT information exchange system, which
+;;     confirms BE 0417497106 as "NV Anheuser-Busch InBev" at Brouwerijplein 1,
+;;     3000 Leuven -- a genuinely independent EU-level authority, and an
+;;     interesting one because that address is the operational seat, not the
+;;     registered seat KBO and GLEIF publish. It is not cited because it is not
+;;     deterministic. Over 30 consecutive GETs it returned the entity name 20
+;;     times; the other 10 answered HTTP 200 with "isValid" : false,
+;;     "userError" : "MS_MAX_CONCURRENT_REQ" and "name" : "---". A citation to
+;;     it would DRIFT about a third of the time for a reason that has nothing
+;;     to do with this entity. Worse, VIES echoes the submitted number back in
+;;     every response, including the failures: a row asserting
+;;     "vatNumber" : "0417497106" would have passed on all 30 attempts, ten of
+;;     them while VIES was reporting that it had answered nothing at all. That
+;;     is the exact shape of a check that cannot tell "measured and fine" from
+;;     "could not measure", so no VIES row appears here in any form.
+;;   * The National Bank of Belgium's Balance Sheet Central, which holds this
+;;     entity's filed annual accounts. ws.cbso.nbb.be answers HTTP 401
+;;     ("missing subscription key") and the consult.cbso.nbb.be page for
+;;     0417497106 answers 200 with a 5,344-byte JavaScript shell containing
+;;     neither the enterprise number nor the name.
+;;   * The Belgian Official Gazette (Moniteur belge / Belgisch Staatsblad).
+;;     www.ejustice.just.fgov.be answered HTTP 500 to the enterprise-number
+;;     query form and HTTP 404 to the result path; the one variant that
+;;     returned 200 delivered a search page carrying neither the number nor
+;;     the name.
+;;   * Luxembourg Business Registers (www.lbr.lu), the RA000432 that GLEIF
+;;     names for three of this LEI's direct children. It answered HTTP 429 to a
+;;     single unauthenticated request, so the Luxembourg children are cited
+;;     from GLEIF only.
+;;   * Chile's Servicio de Impuestos Internos, the RA000787 GLEIF names for
+;;     CERVECERIA CHILE S A. zeus.sii.cl resolves and answers 200, but the
+;;     contribuyente endpoint returned a 92-byte body carrying neither the RUT
+;;     nor the name; www.cmfchile.cl does not resolve from the environment this
+;;     gate runs in. That is a reachability fact about the gate, not a
+;;     judgement about the registers.
+;;   * The directors. The KBO page lists fifteen named natural persons holding
+;;     legal functions, with the dates of their appointments. No claim in this
+;;     catalog needs them, so none is cited and none is reproduced here. The
+;;     same rule applied to the Belgian entity applies to the foreign children.
+;;   * www.ab-inbev.com is the company's own site, not a register, and is not
+;;     cited for any claim here. It is the source of the privacy policy this
+;;     repository archives; that archive is checked separately, and the two
+;;     must not be confused. Measured 2026-08-20, that archive is sound: the
+;;     recorded sha256 reproduces from the recorded text, the text carries no
+;;     404 marker, and the source URL still answers HTTP 200 with a privacy
+;;     policy.
+;;
+;; Independent third-party archive. Not affiliated with, endorsed by, or
+;; sponsored by ANHEUSER-BUSCH INBEV.
+
+{:catalog/subject
+ {:company/legal-name       "ANHEUSER-BUSCH INBEV"
+  :company/lei              "5493008H3828EMEXB082"
+  :company/jurisdiction     "BE"
+  :company/business-id      "0417.497.106"
+  :company/business-id-kind "Ondernemingsnummer (Kruispuntbank van Ondernemingen)"
+  :company/legal-form-elf   "R85P"
+  :company/website          "https://www.ab-inbev.com/"}
+
+ :catalog/retrieved "2026-08-20T10:20:00Z"
+
+ :catalog/entries
+ [;; ---- GLEIF, subject LEI record -------------------------------------------
+  {:cite/id "gleif-lei-record-legal-name"
+   :cite/authority :gleif
+   :cite/claim "GLEIF publishes LEI 5493008H3828EMEXB082 with legal name ANHEUSER-BUSCH INBEV."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"legalName\":{\"name\":\"ANHEUSER-BUSCH INBEV\""}
+  {:cite/id "gleif-lei-record-lei"
+   :cite/authority :gleif
+   :cite/claim "The record served at that address carries the LEI itself, so the URL and the identifier agree."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"lei\":\"5493008H3828EMEXB082\""}
+  {:cite/id "gleif-registered-as"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the entity as registered under national identifier 0417.497.106."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"registeredAs\":\"0417.497.106\""}
+  {:cite/id "gleif-validated-as"
+   :cite/authority :gleif
+   :cite/claim "GLEIF's registration block records the SAME number as the one it validated the entity against."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"validatedAs\":\"0417.497.106\""}
+  {:cite/id "gleif-registered-at-ra"
+   :cite/authority :gleif
+   :cite/claim "GLEIF names RA000025 as the registration authority for this entity. ATTRIBUTE ROW: also true of SOLVAY."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"registeredAt\":{\"id\":\"RA000025\""}
+  {:cite/id "gleif-jurisdiction"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the entity's jurisdiction as BE. ATTRIBUTE ROW: also true of SOLVAY."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"jurisdiction\":\"BE\""}
+  {:cite/id "gleif-legal-form-elf"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the entity legal form code as R85P. ATTRIBUTE ROW: also true of SOLVAY."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"legalForm\":{\"id\":\"R85P\""}
+  {:cite/id "gleif-entity-status-active"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the entity status as ACTIVE. ATTRIBUTE ROW: also true of SOLVAY."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"status\":\"ACTIVE\""}
+  {:cite/id "gleif-registration-status-issued"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the LEI registration status as ISSUED. ATTRIBUTE ROW: also true of SOLVAY."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"status\":\"ISSUED\""}
+  {:cite/id "gleif-creation-date-1977"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records an entity creation date of 1977-08-02 -- the date KBO independently gives as the start date."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"creationDate\":\"1977-08-02T00:00:00Z\""}
+  {:cite/id "gleif-legal-address-line"
+   :cite/authority :gleif
+   :cite/claim "GLEIF publishes the address line as Grand-Place 1 -- the French rendering KBO also serves."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"addressLines\":[\"Grand-Place 1\"]"}
+  {:cite/id "gleif-legal-address-city"
+   :cite/authority :gleif
+   :cite/claim "GLEIF publishes the city as Bruxelles."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"city\":\"Bruxelles\""}
+  {:cite/id "gleif-legal-address-region"
+   :cite/authority :gleif
+   :cite/claim "GLEIF places the entity in region BE-BRU (Brussels-Capital). ATTRIBUTE ROW: also true of SOLVAY, which is also seated in BE-BRU."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"region\":\"BE-BRU\""}
+  {:cite/id "gleif-bic"
+   :cite/authority :gleif
+   :cite/claim "GLEIF maps this LEI to BIC ABIXBEBBXXX."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"bic\":[\"ABIXBEBBXXX\"]"}
+  {:cite/id "gleif-qcc"
+   :cite/authority :gleif
+   :cite/claim "GLEIF carries the entity's QCC cross-reference QBE25EM2VW."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"qcc\":\"QBE25EM2VW\""}
+  {:cite/id "gleif-spglobal"
+   :cite/authority :gleif
+   :cite/claim "GLEIF carries the entity's S&P Global company id 745257."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"spglobal\":[\"745257\"]"}
+  {:cite/id "gleif-managing-lou-id"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the managing LOU as 549300O897ZC5H7CY412."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"managingLou\":\"549300O897ZC5H7CY412\""}
+  {:cite/id "gleif-corroboration-level"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the corroboration level as FULLY_CORROBORATED. ATTRIBUTE ROW: also true of SOLVAY."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"corroborationLevel\":\"FULLY_CORROBORATED\""}
+  {:cite/id "gleif-conformity-flag"
+   :cite/authority :gleif
+   :cite/claim "GLEIF flags the record as CONFORMING to the LEI data quality rules. ATTRIBUTE ROW: also true of SOLVAY."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"conformityFlag\":\"CONFORMING\""}
+  {:cite/id "gleif-initial-registration-2014"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the LEI as initially registered on 2014-04-29."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082"
+   :cite/expect-substring "\"initialRegistrationDate\":\"2014-04-29T01:41:00Z\""}
+
+  ;; ---- GLEIF, reverse lookup by national identifier ------------------------
+  {:cite/id "gleif-reverse-registeredas-total-one"
+   :cite/authority :gleif
+   :cite/claim "Asked which LEIs are registered as 0417.497.106, GLEIF returns exactly one."
+   :cite/url "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=0417.497.106"
+   :cite/expect-substring "\"total\":1"}
+  {:cite/id "gleif-reverse-registeredas-is-subject"
+   :cite/authority :gleif
+   :cite/claim "That one LEI is this repository's subject, so the enterprise number resolves to this LEI and no other."
+   :cite/url "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=0417.497.106"
+   :cite/expect-substring "\"id\":\"5493008H3828EMEXB082\""}
+  {:cite/id "gleif-reverse-registeredas-name"
+   :cite/authority :gleif
+   :cite/claim "The record returned by that reverse lookup carries the subject's legal name."
+   :cite/url "https://api.gleif.org/api/v1/lei-records?filter%5Bentity.registeredAs%5D=0417.497.106"
+   :cite/expect-substring "ANHEUSER-BUSCH INBEV"}
+
+  ;; ---- GLEIF, registration authority records ------------------------------
+  {:cite/id "gleif-ra000025-international-name"
+   :cite/authority :gleif
+   :cite/claim "GLEIF resolves RA000025 to the Crossroad Bank of Enterprises."
+   :cite/url "https://api.gleif.org/api/v1/registration-authorities/RA000025"
+   :cite/expect-substring "\"internationalName\":\"Crossroad Bank of Enterprises\""}
+  {:cite/id "gleif-ra000025-local-name"
+   :cite/authority :gleif
+   :cite/claim "GLEIF gives the Dutch name of that authority as Kruispuntbank van Ondernemingen -- the register queried below."
+   :cite/url "https://api.gleif.org/api/v1/registration-authorities/RA000025"
+   :cite/expect-substring "Kruispuntbank van Ondernemingen"}
+  {:cite/id "gleif-ra000025-organisation"
+   :cite/authority :gleif
+   :cite/claim "GLEIF names the operating body as the Federal Public Service Economy."
+   :cite/url "https://api.gleif.org/api/v1/registration-authorities/RA000025"
+   :cite/expect-substring "\"internationalOrganizationName\":\"Federal Public Service Economy (Ministry of Economy)\""}
+  {:cite/id "gleif-ra000025-country"
+   :cite/authority :gleif
+   :cite/claim "GLEIF places RA000025 in Belgium."
+   :cite/url "https://api.gleif.org/api/v1/registration-authorities/RA000025"
+   :cite/expect-substring "\"countryCode\":\"BE\""}
+  {:cite/id "gleif-ra000585-organisation"
+   :cite/authority :gleif
+   :cite/claim "GLEIF resolves RA000585 -- the authority for the UK child -- to Companies House."
+   :cite/url "https://api.gleif.org/api/v1/registration-authorities/RA000585"
+   :cite/expect-substring "\"internationalOrganizationName\":\"Companies House\""}
+  {:cite/id "gleif-ra000585-country"
+   :cite/authority :gleif
+   :cite/claim "GLEIF places RA000585 in GB."
+   :cite/url "https://api.gleif.org/api/v1/registration-authorities/RA000585"
+   :cite/expect-substring "\"countryCode\":\"GB\""}
+  {:cite/id "gleif-ra000014-organisation"
+   :cite/authority :gleif
+   :cite/claim "GLEIF resolves RA000014 -- the authority for the Australian child -- to ASIC."
+   :cite/url "https://api.gleif.org/api/v1/registration-authorities/RA000014"
+   :cite/expect-substring "\"internationalOrganizationName\":\"The Australian Securities and Investment Commission\""}
+  {:cite/id "gleif-ra000014-country"
+   :cite/authority :gleif
+   :cite/claim "GLEIF places RA000014 in AU."
+   :cite/url "https://api.gleif.org/api/v1/registration-authorities/RA000014"
+   :cite/expect-substring "\"countryCode\":\"AU\""}
+
+  ;; ---- GLEIF, entity legal form table -------------------------------------
+  {:cite/id "gleif-elf-r85p-dutch-name"
+   :cite/authority :gleif
+   :cite/claim "GLEIF's ELF table renders R85P in Dutch as Naamloze vennootschap -- the legal form KBO independently reports."
+   :cite/url "https://api.gleif.org/api/v1/entity-legal-forms/R85P"
+   :cite/expect-substring "\"localName\":\"Naamloze vennootschap\""}
+  {:cite/id "gleif-elf-r85p-country"
+   :cite/authority :gleif
+   :cite/claim "GLEIF's ELF table scopes R85P to Belgium."
+   :cite/url "https://api.gleif.org/api/v1/entity-legal-forms/R85P"
+   :cite/expect-substring "\"country\":\"Belgium\""}
+  {:cite/id "gleif-elf-r85p-status"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the R85P code itself as active (ACTV) in the ELF list."
+   :cite/url "https://api.gleif.org/api/v1/entity-legal-forms/R85P"
+   :cite/expect-substring "\"status\":\"ACTV\""}
+
+  ;; ---- GLEIF, instruments -------------------------------------------------
+  {:cite/id "gleif-isin-ordinary-share"
+   :cite/authority :gleif
+   :cite/claim "GLEIF maps ISIN BE0974293251 to this LEI."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/isins?page%5Bsize%5D=30"
+   :cite/expect-substring "\"isin\":\"BE0974293251\""}
+  {:cite/id "gleif-isin-us-adr"
+   :cite/authority :gleif
+   :cite/claim "GLEIF maps the US-domiciled instrument US03524A1088 to the same LEI."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/isins?page%5Bsize%5D=30"
+   :cite/expect-substring "\"isin\":\"US03524A1088\""}
+
+  ;; ---- GLEIF, corporate structure -----------------------------------------
+  {:cite/id "gleif-children-total-six"
+   :cite/authority :gleif
+   :cite/claim "GLEIF publishes six direct children for this LEI."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"total\":6"}
+  {:cite/id "gleif-child-uk-name"
+   :cite/authority :gleif
+   :cite/claim "GLEIF lists AB INBEV INVESTMENTS HOLDINGS COMPANY 2 LIMITED as a direct child."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"name\":\"AB INBEV INVESTMENTS HOLDINGS COMPANY 2 LIMITED\""}
+  {:cite/id "gleif-child-uk-number"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records that child's national identifier as 11642142 -- the number read back at Companies House below."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"registeredAs\":\"11642142\""}
+  {:cite/id "gleif-child-au-name"
+   :cite/authority :gleif
+   :cite/claim "GLEIF lists FBG FINANCE PTY LTD as a direct child."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"name\":\"FBG FINANCE PTY LTD\""}
+  {:cite/id "gleif-child-au-number"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records that child's national identifier as 071 508 702 -- the number read back at the ABR below."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"registeredAs\":\"071 508 702\""}
+  {:cite/id "gleif-child-cl-name"
+   :cite/authority :gleif
+   :cite/claim "GLEIF lists CERVECERIA CHILE S A as a direct child."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"name\":\"CERVECERIA CHILE S A\""}
+  {:cite/id "gleif-child-cl-rut"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records the Chilean child's RUT as 96547710-1. This one is cited from GLEIF only; the SII endpoint is unusable (see header)."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"registeredAs\":\"96547710-1\""}
+  {:cite/id "gleif-child-lu-brasserie"
+   :cite/authority :gleif
+   :cite/claim "GLEIF lists Brasserie de Luxembourg Mousel-Diekirch as a direct child."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"name\":\"Brasserie de Luxembourg Mousel-Diekirch\""}
+  {:cite/id "gleif-child-lu-rcs"
+   :cite/authority :gleif
+   :cite/claim "GLEIF records a Luxembourg child under RCS number B172854. Cited from GLEIF only; www.lbr.lu answered HTTP 429 (see header)."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-children?page%5Bsize%5D=30"
+   :cite/expect-substring "\"registeredAs\":\"B172854\""}
+
+  ;; ---- GLEIF, relationship records ----------------------------------------
+  {:cite/id "gleif-rel-endnode-is-subject"
+   :cite/authority :gleif
+   :cite/claim "Every direct-child relationship record ends at this LEI, so the edges are asserted about this entity."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-child-relationships"
+   :cite/expect-substring "\"endNode\":{\"id\":\"5493008H3828EMEXB082\",\"type\":\"LEI\"}"}
+  {:cite/id "gleif-rel-type-consolidated-by"
+   :cite/authority :gleif
+   :cite/claim "GLEIF types those edges as IS_DIRECTLY_CONSOLIDATED_BY -- accounting consolidation, not mere ownership. ATTRIBUTE ROW: also true of SOLVAY's edges."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-child-relationships"
+   :cite/expect-substring "\"type\":\"IS_DIRECTLY_CONSOLIDATED_BY\""}
+  {:cite/id "gleif-rel-startnode-uk-child"
+   :cite/authority :gleif
+   :cite/claim "The UK child appears as the start node of one such edge."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-child-relationships"
+   :cite/expect-substring "\"startNode\":{\"id\":\"5493003OKK2CE8UZYM21\",\"type\":\"LEI\"}"}
+  {:cite/id "gleif-rel-startnode-au-child"
+   :cite/authority :gleif
+   :cite/claim "The Australian child appears as the start node of another."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-child-relationships"
+   :cite/expect-substring "\"startNode\":{\"id\":\"549300SGUYUNJCDIQR26\",\"type\":\"LEI\"}"}
+
+  ;; ---- GLEIF, parent reporting exceptions ---------------------------------
+  {:cite/id "gleif-direct-parent-exception-category"
+   :cite/authority :gleif
+   :cite/claim "GLEIF holds a DIRECT_ACCOUNTING_CONSOLIDATION_PARENT reporting exception for this LEI -- it reports no direct parent. ATTRIBUTE ROW: SOLVAY files the same category."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-parent-reporting-exception"
+   :cite/expect-substring "\"category\":\"DIRECT_ACCOUNTING_CONSOLIDATION_PARENT\""}
+  {:cite/id "gleif-direct-parent-exception-reason"
+   :cite/authority :gleif
+   :cite/claim "The stated reason is NON_CONSOLIDATING: the entity is not consolidated into any parent's accounts."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/direct-parent-reporting-exception"
+   :cite/expect-substring "\"reason\":\"NON_CONSOLIDATING\""}
+  {:cite/id "gleif-ultimate-parent-exception-category"
+   :cite/authority :gleif
+   :cite/claim "The same exception is filed at the ultimate level, so this LEI is the top of its consolidation tree in GLEIF. ATTRIBUTE ROW: SOLVAY files the same category."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/ultimate-parent-reporting-exception"
+   :cite/expect-substring "\"category\":\"ULTIMATE_ACCOUNTING_CONSOLIDATION_PARENT\""}
+
+  ;; ---- GLEIF, managing LOU ------------------------------------------------
+  {:cite/id "gleif-lou-legal-name"
+   :cite/authority :gleif
+   :cite/claim "The LOU that maintains this record is Nordic Legal Entity Identifier AB."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/managing-lou"
+   :cite/expect-substring "\"legalName\":{\"name\":\"Nordic Legal Entity Identifier AB\""}
+  {:cite/id "gleif-lou-registered-as"
+   :cite/authority :gleif
+   :cite/claim "That LOU is itself a registered Swedish company, 556708-1699 -- the LEI system's own chain of custody is checkable."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493008H3828EMEXB082/managing-lou"
+   :cite/expect-substring "\"registeredAs\":\"556708-1699\""}
+
+  ;; ---- GLEIF, child records addressed individually ------------------------
+  {:cite/id "gleif-uk-child-record-name"
+   :cite/authority :gleif
+   :cite/claim "Addressed by its own LEI, the UK child's GLEIF record carries the same name."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493003OKK2CE8UZYM21"
+   :cite/expect-substring "\"name\":\"AB INBEV INVESTMENTS HOLDINGS COMPANY 2 LIMITED\""}
+  {:cite/id "gleif-uk-child-record-number"
+   :cite/authority :gleif
+   :cite/claim "and the same company number 11642142."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493003OKK2CE8UZYM21"
+   :cite/expect-substring "\"registeredAs\":\"11642142\""}
+  {:cite/id "gleif-uk-child-record-ra"
+   :cite/authority :gleif
+   :cite/claim "and names RA000585 as the authority that validated it."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493003OKK2CE8UZYM21"
+   :cite/expect-substring "\"registeredAt\":{\"id\":\"RA000585\""}
+  {:cite/id "gleif-au-child-record-name"
+   :cite/authority :gleif
+   :cite/claim "Addressed by its own LEI, the Australian child's GLEIF record carries the same name."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/549300SGUYUNJCDIQR26"
+   :cite/expect-substring "\"name\":\"FBG FINANCE PTY LTD\""}
+  {:cite/id "gleif-au-child-record-lapsed"
+   :cite/authority :gleif
+   :cite/claim "That child's LEI REGISTRATION is LAPSED even though its entity status is ACTIVE -- a fact about the LEI system's upkeep, which the ABR rows below independently contradict as a statement about the company."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/549300SGUYUNJCDIQR26"
+   :cite/expect-substring "\"status\":\"LAPSED\""}
+  {:cite/id "gleif-cl-child-record-rut"
+   :cite/authority :gleif
+   :cite/claim "Addressed by its own LEI, the Chilean child's GLEIF record carries RUT 96547710-1."
+   :cite/url "https://api.gleif.org/api/v1/lei-records/5493000F6BEY43K5JQ93"
+   :cite/expect-substring "\"registeredAs\":\"96547710-1\""}
+
+  ;; ---- KBO / BCE Public Search, Dutch -------------------------------------
+  {:cite/id "kbo-nl-enterprise-number"
+   :cite/authority :kbo
+   :cite/claim "Belgium's Crossroads Bank for Enterprises answers for enterprise number 0417.497.106."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "0417.497.106"}
+  {:cite/id "kbo-nl-name-upper"
+   :cite/authority :kbo
+   :cite/claim "KBO returns ANHEUSER-BUSCH INBEV for that number -- the name GLEIF publishes, read back from the register GLEIF names."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "ANHEUSER-BUSCH INBEV"}
+  {:cite/id "kbo-nl-name-mixed"
+   :cite/authority :kbo
+   :cite/claim "KBO also carries the mixed-case rendering Anheuser-Busch InBev."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "Anheuser-Busch InBev"}
+  {:cite/id "kbo-nl-abbreviation"
+   :cite/authority :kbo
+   :cite/claim "KBO records the registered abbreviation AB Inbev."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "AB Inbev"}
+  {:cite/id "kbo-nl-seat-street"
+   :cite/authority :kbo
+   :cite/claim "KBO gives the registered seat street, in Dutch, as Grote Markt 1."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "Grote Markt&nbsp;1"}
+  {:cite/id "kbo-nl-seat-city"
+   :cite/authority :kbo
+   :cite/claim "and the city, in Dutch, as 1000 Brussel."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "1000&nbsp;Brussel"}
+  {:cite/id "kbo-nl-legal-form"
+   :cite/authority :kbo
+   :cite/claim "KBO reports the legal form as Naamloze vennootschap -- what GLEIF's ELF table renders R85P as. ATTRIBUTE ROW: COLRUYT GROUP is also a naamloze vennootschap."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "Naamloze vennootschap"}
+  {:cite/id "kbo-nl-start-date-1977"
+   :cite/authority :kbo
+   :cite/claim "KBO gives the start date as 2 augustus 1977, matching GLEIF's creationDate of 1977-08-02."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "2 augustus 1977"}
+  {:cite/id "kbo-nl-capital"
+   :cite/authority :kbo
+   :cite/claim "KBO reports capital of 1.238.608.344,12 EUR -- a figure that appears in no other source cited here."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "1.238.608.344,12"}
+  {:cite/id "kbo-nl-nace-holding"
+   :cite/authority :kbo
+   :cite/claim "KBO classifies the entity under NACE-BEL 70.100, head-office activities. ATTRIBUTE ROW: COLRUYT GROUP also carries 70.100."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "70.100"}
+  {:cite/id "kbo-nl-predecessor-number"
+   :cite/authority :kbo
+   :cite/claim "KBO records that this enterprise number replaces 0649.641.563, closed 10/10/2016."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "0649.641.563"}
+  {:cite/id "kbo-nl-newbelco"
+   :cite/authority :kbo
+   :cite/claim "KBO names that other number as Newbelco SA/NV, the vehicle of the 2016 combination."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0417497106&actionLu=Zoek"
+   :cite/expect-substring "Newbelco"}
+
+  ;; ---- KBO / BCE Public Search, English -----------------------------------
+  {:cite/id "kbo-en-enterprise-number"
+   :cite/authority :kbo
+   :cite/claim "The same register, asked in English, answers for the same enterprise number."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?lang=en&nummer=0417497106&actionLu=Search"
+   :cite/expect-substring "0417.497.106"}
+  {:cite/id "kbo-en-name"
+   :cite/authority :kbo
+   :cite/claim "and returns the same legal name."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?lang=en&nummer=0417497106&actionLu=Search"
+   :cite/expect-substring "ANHEUSER-BUSCH INBEV"}
+  {:cite/id "kbo-en-seat-street-grand-place"
+   :cite/authority :kbo
+   :cite/claim "but gives the seat street as Grand-Place 1 -- so GLEIF's address string is a rendering KBO itself serves, not a translation introduced in between."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?lang=en&nummer=0417497106&actionLu=Search"
+   :cite/expect-substring "Grand-Place&nbsp;1"}
+  {:cite/id "kbo-en-seat-city-bruxelles"
+   :cite/authority :kbo
+   :cite/claim "and the city as 1000 Bruxelles, matching GLEIF's city field."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?lang=en&nummer=0417497106&actionLu=Search"
+   :cite/expect-substring "1000&nbsp;Bruxelles"}
+  {:cite/id "kbo-en-legal-form"
+   :cite/authority :kbo
+   :cite/claim "KBO renders the legal form in English as Public limited company. ATTRIBUTE ROW: COLRUYT GROUP is also rendered a public limited company."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?lang=en&nummer=0417497106&actionLu=Search"
+   :cite/expect-substring "Public limited company"}
+  {:cite/id "kbo-en-start-date-1977"
+   :cite/authority :kbo
+   :cite/claim "and the start date as August 2, 1977 -- the same date the Dutch page and GLEIF give."
+   :cite/url "https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?lang=en&nummer=0417497106&actionLu=Search"
+   :cite/expect-substring "August 2, 1977"}
+
+  ;; ---- UK Companies House -------------------------------------------------
+  {:cite/id "uk-ch-company-name"
+   :cite/authority :companies-house
+   :cite/claim "Companies House returns AB INBEV INVESTMENTS HOLDINGS COMPANY 2 LIMITED for company number 11642142."
+   :cite/url "https://find-and-update.company-information.service.gov.uk/company/11642142"
+   :cite/expect-substring "AB INBEV INVESTMENTS HOLDINGS COMPANY 2 LIMITED"}
+  {:cite/id "uk-ch-company-number"
+   :cite/authority :companies-house
+   :cite/claim "and states that company number on the record it serves."
+   :cite/url "https://find-and-update.company-information.service.gov.uk/company/11642142"
+   :cite/expect-substring "11642142"}
+  {:cite/id "uk-ch-registered-office"
+   :cite/authority :companies-house
+   :cite/claim "Companies House gives the registered office on Fetter Lane, London."
+   :cite/url "https://find-and-update.company-information.service.gov.uk/company/11642142"
+   :cite/expect-substring "Fetter Lane"}
+  {:cite/id "uk-ch-incorporation-date"
+   :cite/authority :companies-house
+   :cite/claim "and an incorporation date of 25 October 2018. ATTRIBUTE ROW: measured 2026-08-20, the adjacent number 11642143 (HARROP LEGAL LTD) carries the same date, because Companies House issues consecutive numbers to same-day incorporations. This row does not identify."
+   :cite/url "https://find-and-update.company-information.service.gov.uk/company/11642142"
+   :cite/expect-substring "25 October 2018"}
+  {:cite/id "uk-ch-name-search-returns-name"
+   :cite/authority :companies-house
+   :cite/claim "Searched by name rather than by number, Companies House returns this company -- the reverse of the lookup above."
+   :cite/url "https://find-and-update.company-information.service.gov.uk/search/companies?q=AB+INBEV+INVESTMENTS+HOLDINGS+COMPANY+2+LIMITED"
+   :cite/expect-substring "AB INBEV INVESTMENTS HOLDINGS COMPANY 2 LIMITED"}
+  {:cite/id "uk-ch-name-search-returns-number"
+   :cite/authority :companies-house
+   :cite/claim "and links that result to company number 11642142, so the name and the number GLEIF pairs are paired by Companies House too, in both directions."
+   :cite/url "https://find-and-update.company-information.service.gov.uk/search/companies?q=AB+INBEV+INVESTMENTS+HOLDINGS+COMPANY+2+LIMITED"
+   :cite/expect-substring "href=\"/company/11642142\""}
+  {:cite/id "uk-ch-sic-holding"
+   :cite/authority :companies-house
+   :cite/claim "and SIC 64209, activities of other holding companies -- consistent with the consolidation edge GLEIF asserts."
+   :cite/url "https://find-and-update.company-information.service.gov.uk/company/11642142"
+   :cite/expect-substring "64209"}
+
+  ;; ---- Australian Business Register ---------------------------------------
+  {:cite/id "abr-entity-name"
+   :cite/authority :abr
+   :cite/claim "The Australian Business Register returns FBG FINANCE PTY LTD for ACN 071 508 702."
+   :cite/url "https://abr.business.gov.au/ABN/View?id=071508702"
+   :cite/expect-substring "FBG FINANCE PTY LTD"}
+  {:cite/id "abr-acn"
+   :cite/authority :abr
+   :cite/claim "and republishes the ASIC company number GLEIF records for that child."
+   :cite/url "https://abr.business.gov.au/ABN/View?id=071508702"
+   :cite/expect-substring "071 508 702"}
+  {:cite/id "abr-abn"
+   :cite/authority :abr
+   :cite/claim "The ABR carries the derived ABN 32 071 508 702, an identifier no other source cited here holds."
+   :cite/url "https://abr.business.gov.au/ABN/View?id=071508702"
+   :cite/expect-substring "32 071 508 702"}
+  {:cite/id "abr-entity-type"
+   :cite/authority :abr
+   :cite/claim "The ABR types the entity as an Australian Private Company. ATTRIBUTE ROW: MONAKA PTY LTD (ACN 000 000 019) is also an Australian Private Company."
+   :cite/url "https://abr.business.gov.au/ABN/View?id=071508702"
+   :cite/expect-substring "Australian Private Company"}
+  {:cite/id "abr-active-since-1999"
+   :cite/authority :abr
+   :cite/claim "and reports it active since 1 November 1999 -- so the child's LAPSED status at GLEIF is a fact about the LEI record, not about the company."
+   :cite/url "https://abr.business.gov.au/ABN/View?id=071508702"
+   :cite/expect-substring "Active from 01&nbsp;Nov&nbsp;1999"}]}
