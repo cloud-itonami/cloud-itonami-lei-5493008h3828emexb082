@@ -97,6 +97,29 @@
 ;; which is the property that matters; this note exists so no reader mistakes
 ;; an attribute row for an identification.
 ;;
+;; KBO WILL SOMETIMES REFUSE, AND THE GATE MUST SAY SO. kbopub answers a burst
+;; of repeated lookups with a 302 to captchaform.html, whose page states that
+;; consultation of Public Search "may only take place enterprise by enterprise",
+;; under article 2 of the Royal Decree of 28 March 2014 implementing article
+;; III.31 of the Code of Economic Law. Measured 2026-08-20 at roughly one
+;; request in eight under repeated querying. Two things follow, and both are
+;; load-bearing:
+;;
+;;   * The gate fetches each DISTINCT url once and checks every row naming it
+;;     against that single body. The eighteen KBO rows below cost two GETs, not
+;;     eighteen. This is what the register asks for, and it is also why a full
+;;     run takes about seventeen seconds instead of a minute.
+;;   * When the challenge is served anyway, the gate reports BLOCKED and exits 2
+;;     -- "could not answer" -- and judges nothing. It does not retry around it,
+;;     carry a session, or vary its headers.
+;;
+;; This was found the hard way. The first version of this catalog issued one GET
+;; per row, provoked the challenge, and reported the affected rows as
+;; "DRIFT ... missing substring" -- which reads as "the Belgian register has
+;; dropped this fact" when what happened is that it declined to answer. That is
+;; the exact failure this workspace keeps finding: a check that returns the same
+;; thing for "measured and wrong" as for "could not measure".
+;;
 ;; ENCODING. Substrings are chosen from the RAW response body, and the hosts do
 ;; not agree on how to encode anything. api.gleif.org escapes every solidus as
 ;; \/ and all non-ASCII as \uXXXX, so no GLEIF row here matches a URL or an

@@ -32,17 +32,39 @@ there that was not retrieved.
 nbb tools/verify_citations.cljs --min 85
 ```
 
-For each row the gate GETs `:cite/url`, requires HTTP 2xx, and requires
-`:cite/expect-substring` in the response body. Exit codes are three, and they do
-not overlap:
+Each **distinct URL** is fetched once — twenty requests for ninety rows — and
+every row naming that URL is checked against that one body: HTTP 2xx, and
+`:cite/expect-substring` present. A run takes about 17 seconds.
+
+Exit codes are three, and they do not overlap:
 
 - **0** — answered, every citation checked, floor met
 - **1** — answered, at least one citation is wrong (each is printed as `DRIFT`)
-- **2** — could not answer: catalog missing, unparseable, empty, or fewer rows
-  than `--min`
+- **2** — could not answer: catalog missing, unparseable, empty, fewer rows than
+  `--min`, or a register that served a challenge instead of a record
+  (printed as `BLOCKED`)
 
 "Nothing was checked" and "nothing was wrong" must not share an exit code, which
-is why 2 exists.
+is why 2 exists. Neither may "the register refused to answer me" and "the
+register no longer carries this claim" — see below.
+
+### If you see BLOCKED
+
+`kbopub.economie.fgov.be` answers a burst of repeated lookups with a 302 to
+`captchaform.html`. That page states that consultation of Public Search "may
+only take place enterprise by enterprise", under article 2 of the Royal Decree
+of 28 March 2014 implementing article III.31 of the Code of Economic Law. It is
+the register telling automated clients to stop, and this gate does not work
+around it: it reports `BLOCKED`, exits 2, and judges nothing.
+
+That refusal is the whole point. Before the gate deduplicated its fetches it
+issued eighteen GETs for the two KBO pages, provoked the challenge on roughly
+one request in eight, and then reported the affected rows as
+`DRIFT ... missing substring` — announcing that a national register had dropped
+a fact, when what had actually happened is that it had declined to answer. A
+check that cannot tell "measured and wrong" from "could not measure" is worse
+than no check. If you get `BLOCKED`, wait and re-run; do not add credentials,
+headers or retries to get past it.
 
 ### Why the substring, and not the status code
 
