@@ -29,7 +29,7 @@ there that was not retrieved.
 | Australian Business Register (ATO) | ACN 071 508 702, a direct child GLEIF validates at RA000014 | 5 |
 
 ```bash
-nbb tools/verify_citations.cljk --min 85
+kbb --backend sci tools/verify_citations.cljk --min 85
 ```
 
 For each row the gate GETs `:cite/url`, requires HTTP 2xx, and requires

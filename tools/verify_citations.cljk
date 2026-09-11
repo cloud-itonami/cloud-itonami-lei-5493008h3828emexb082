@@ -1,4 +1,4 @@
-#!/usr/bin/env nbb
+#!/usr/bin/env kbb
 ;; Live gate for facts/catalog.edn (organisation-record citations).
 ;;
 ;; For every :catalog/entries row:
