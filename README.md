@@ -18,7 +18,7 @@ catalog's real reach was 27 countries with the United States at 55%.
 ## Verified public-register citations
 
 `facts/catalog.edn` holds 90 citations to four independent public registers, and
-`tools/verify_citations.cljs` checks every one of them live. Nothing is recorded
+`tools/verify_citations.cljk` checks every one of them live. Nothing is recorded
 there that was not retrieved.
 
 | authority | what it answers for | rows |
@@ -29,7 +29,7 @@ there that was not retrieved.
 | Australian Business Register (ATO) | ACN 071 508 702, a direct child GLEIF validates at RA000014 | 5 |
 
 ```bash
-nbb tools/verify_citations.cljs --min 85
+nbb tools/verify_citations.cljk --min 85
 ```
 
 For each row the gate GETs `:cite/url`, requires HTTP 2xx, and requires

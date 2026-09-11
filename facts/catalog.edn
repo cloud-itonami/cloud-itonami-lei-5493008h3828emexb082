@@ -1,6 +1,6 @@
 ;; Verified public-register citations for the legal entity archived by this repository.
 ;;
-;; Every row is checked live by tools/verify_citations.cljs:
+;; Every row is checked live by tools/verify_citations.cljk:
 ;;   * GET :cite/url must answer HTTP 2xx
 ;;   * :cite/expect-substring must appear in the response body
 ;;
